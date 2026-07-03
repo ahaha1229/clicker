@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オンライン・クリッカーゲーム</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f3f5; padding: 20px; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button { font-size: 1.2rem; padding: 10px 20px; margin: 10px; cursor: pointer; border-radius: 5px; border: none; background: #0070f3; color: white; }
+        button:active { transform: scale(0.98); }
+        #click-btn { font-size: 2rem; padding: 40px; border-radius: 50%; background: #ff4757; width: 150px; height: 150px; margin: 20px auto; display: flex; align-items: center; justify-content: center; }
+        ul { list-style: none; padding: 0; text-align: left; }
+        li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>連打王決定戦！</h1>
+        
+        <!-- 名前入力画面 -->
+        <div id="login-view">
+            <input type="text" id="username" placeholder="名前を入力してください" maxlength="10" style="padding: 8px; font-size: 1rem;"><br>
+            <button onclick="startGame()">ゲーム開始</button>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-view" style="display: none;">
+            <p>プレイヤー: <strong id="display-name"></strong></p>
+            <h2>スコア: <span id="score">0</span></h2>
+            <button id="click-btn" onclick="addClick()">CLICK!</button>
+            <br>
+            <button onclick="saveScore()" style="background: #2ed573;">スコアを送信してランキングを見る</button>
+        </div>
+
+        <!-- ランキング画面 -->
+        <div id="ranking-view" style="display: none;">
+            <h2>世界ランキング</h2>
+            <ul id="ranking-list"></ul>
+            <button onclick="resetGame()" style="background: #747d8c;">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let username = "";
+
+        function startGame() {
+            username = document.getElementById('username').value.trim();
+            if (!username) return alert('名前を入力してください！');
+            document.getElementById('display-name').textContent = username;
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'block';
+        }
+
+        function addClick() {
+            score++;
+            document.getElementById('score').textContent = score;
+        }
+
+        async function saveScore() {
+            // スコアを送信
+            await fetch('/api/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, score })
+            });
+            // ランキングを取得して表示
+            await loadRanking();
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('ranking-view').style.display = 'block';
+        }
+
+        async function loadRanking() {
+            const res = await fetch('/api/score');
+            const data = await res.json();
+            const list = document.getElementById('ranking-list');
+            list.innerHTML = "";
+            data.forEach((player, index) => {
+                list.innerHTML += `<li><span>${index + 1}位: ${player.username}</span> <strong>${player.score} 点</strong></li>`;
+            });
+        }
+
+        function resetGame() {
+            score = 0;
+            document.getElementById('score').textContent = score;
+            document.getElementById('ranking-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
